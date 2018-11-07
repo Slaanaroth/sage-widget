@@ -176,6 +176,7 @@ class QueryExecutor extends Component {
      },
       avgServerTime: 0,
       diefficiency: 0,
+      timeLeft: null,
       errorMessage: null,
       isRunning: false,
       showTable: false,
@@ -218,6 +219,8 @@ class QueryExecutor extends Component {
               <div className='col-md-12'>
                 <br/>
                 <h3><i className='fas fa-chart-bar' /> Real-time Statistics</h3>
+                {this.state.timeLeft ? <h5>Estimated remaining time : {this.state.timeLeft}</h5> : (null)}
+
                 <table className='table'>
                   <thead>
                     <tr>
@@ -363,6 +366,7 @@ class QueryExecutor extends Component {
        }
      },
       diefficiency: 0,
+      timeLeft: null,
       execLogs: "No response yet",
       errorMessage: '',
       hasError: false,
@@ -471,7 +475,40 @@ class QueryExecutor extends Component {
 
 
 
+  secondsToHms(d) {
+      d = Number(d);
+      var h = Math.floor(d / 3600);
+      var m = Math.floor(d % 3600 / 60);
+      var s = Math.floor(d % 3600 % 60);
 
+      var hDisplay = h > 0 ? h + (h == 1 ? " hour, " : " hours, ") : "";
+      var mDisplay = m > 0 ? m + (m == 1 ? " minute, " : " minutes, ") : "";
+      var sDisplay = s > 0 ? s + (s == 1 ? " second" : " seconds") : "";
+      return hDisplay + mDisplay + sDisplay;
+  }
+
+
+  /**
+  * extracts the scanSource (to get its current progression state)
+  */
+  extractScanSource(execTree){
+    var res = null;
+    for(var attr in execTree) {
+      if(!execTree.hasOwnProperty(attr)) continue;
+
+      if(attr=="0") break;
+
+      if(attr=="scanSource") {
+        return execTree[attr];
+      }
+
+      res = res || this.extractScanSource(execTree[attr]);
+      if (res != null) {
+        return res;
+      }
+    }
+    return res;
+  }
 
   /**
    * Stub the HTTP client to measure HTTP requests
@@ -493,8 +530,13 @@ class QueryExecutor extends Component {
           var iterators = root.lookup("iterators");
           var nsr=iterators.RootTree.decode(Buffer.from(next,'base64'));
           var treeText = JSON.stringify(nsr, null, 2);
+          var scanSource = this.extractScanSource(nsr);
+          var card = parseInt(scanSource.cardinality);
+          var offset = parseInt(scanSource.offset);
+          var estimate = ((card - offset)* this.state.executionTime) / offset;
           this.setState({
-            execLogs: treeText
+            execLogs: treeText,
+            timeLeft: this.secondsToHms(estimate)
           })
         }
 
