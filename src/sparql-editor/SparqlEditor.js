@@ -63,15 +63,17 @@ class SparqlEditor extends Component {
   }
 
   _handleKeyDown(event) {
-    switch( event.keyCode ) {
+    if (document.activeElement.type != "text" && document.activeElement.type != "textarea") {
+      switch( event.keyCode ) {
         case 37:
-            ReactDOM.findDOMNode(this.refs.prevBtn).click();
-            break;
+        ReactDOM.findDOMNode(this.refs.prevBtn).click();
+        break;
         case 39:
-            ReactDOM.findDOMNode(this.refs.nextBtn).click();
-            break;
+        ReactDOM.findDOMNode(this.refs.nextBtn).click();
+        break;
         default:
-            break;
+        break;
+      }
     }
   }
 
