@@ -31,6 +31,7 @@ import { DCTERMS, HYDRA, SAGE, SD, RDF, RDFS } from '../rdf.js'
 import { groupBy, map } from 'lodash'
 import 'yasgui-yasqe/dist/yasqe.min.css'
 import './SparqlEditor.css'
+import ReactDOM from 'react-dom'
 
 /**
  * A SPARQL Query editor, built using YASQE
@@ -52,9 +53,30 @@ class SparqlEditor extends Component {
       urls: [],
       queries: []
     }
+    this.qList = [];
+
     this.updateUrl = this.updateUrl.bind(this)
     this.setUrl = this.setUrl.bind(this)
     this.setPresetQuery = this.setPresetQuery.bind(this)
+    this.nextQuery = this.nextQuery.bind(this)
+    this.prevQuery = this.prevQuery.bind(this)
+  }
+
+  _handleKeyDown(event) {
+    switch( event.keyCode ) {
+        case 37:
+            ReactDOM.findDOMNode(this.refs.prevBtn).click();
+            break;
+        case 39:
+            ReactDOM.findDOMNode(this.refs.nextBtn).click();
+            break;
+        default:
+            break;
+    }
+  }
+
+  componentWillMount(){
+    document.addEventListener("keydown", this._handleKeyDown.bind(this));
   }
 
   render () {
@@ -83,12 +105,13 @@ class SparqlEditor extends Component {
           <div className='form-group'>
             <label for='queryName'><strong>Preset query:</strong></label>
             <div className='input-group'>
+              <button className='btn btn-primary' onClick={this.prevQuery} ref='prevBtn'><i className='fas fa-chevron-left' /></button>&nbsp;
               <div className='input-group-prepend'>
                 <div className='dropdown'>
                   <button className='btn btn-outline-secondary dropdown-toggle' type='button' id='dropdownMenuButton' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>
                     Preset queries
                   </button>
-                  <div className='dropdown-menu scrollable-menu' aria-labelledby='dropdownMenuButton'>
+                  <div className='dropdown-menu scrollable-menu' aria-labelledby='dropdownMenuButton' ref='queryList'>
                     {this.state.queries.map(g => (
                       <div>
                         <h6>{g[0]}</h6>
@@ -100,6 +123,7 @@ class SparqlEditor extends Component {
                 </div>
               </div>
               <input className='form-control' id='queryName' type='text' value={this.state.queryName} disabled />
+              &nbsp;<button className='btn btn-primary' onClick={this.nextQuery} ref='nextBtn'><i className='fas fa-chevron-right' /></button>
             </div>
           </div>
         </form>
@@ -211,6 +235,58 @@ class SparqlEditor extends Component {
       query: event.target.attributes.getNamedItem('qvalue').value
     })
   }
+
+  nextQuery(event){
+    event.preventDefault()
+    if (this.qList.length == 0) {
+      this.prepareQueryList();
+    }
+
+    var currInd = this.getCurrIndex(this.yasqe.getValue());
+    if (currInd != -1 && currInd < this.qList.length-1) {
+      this.qList[currInd+1].click();
+    }
+
+    return false;
+  }
+
+  prevQuery(event){
+    event.preventDefault()
+
+    if (this.qList.length == 0) {
+      this.prepareQueryList();
+    }
+
+    var currInd = this.getCurrIndex(this.yasqe.getValue());
+    if (currInd > 0) {
+      this.qList[currInd-1].click();
+    }
+    return false;
+  }
+
+  prepareQueryList(){
+    var nodeList = ReactDOM.findDOMNode(this.refs.queryList).childNodes;
+    var sList = [];
+    for(var i = nodeList.length; i--; sList.unshift(nodeList[i]));
+    sList = sList.map((val) => val.childNodes);
+    var qList = [];
+    for (var ind in sList) {
+      var serv = sList[ind];
+      for (var i = 0; i < serv.length; i++) {
+        if (serv[i].tagName == "A") {
+          this.qList.push(serv[i]);
+        }
+      }
+    }
+  }
+
+  getCurrIndex(currQuery){
+    function currIndex(el) {
+      return el.attributes.qValue.nodeValue === currQuery;
+    }
+    return this.qList.findIndex(currIndex);
+  }
+
 }
 
 export default SparqlEditor

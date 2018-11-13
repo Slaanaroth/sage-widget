@@ -195,6 +195,7 @@ class QueryExecutor extends Component {
       <script src="node_modules/chart.js/dist/Chart.bundle.js"></script>
         <div className='row'>
           <div className='col-md-12'>
+            <br/>
             {this.state.isRunning ? (
               <div>
                 <button className='btn btn-warning' onClick={this.pauseExecution}>{this.state.pauseText}</button>
