@@ -117,7 +117,11 @@ class SparqlEditor extends Component {
                     {this.state.queries.map(g => (
                       <div>
                         <h6>{g[0]}</h6>
-                        {g[1].map(q => (<a className='dropdown-item' key={q.name} qValue={q.value} href={q.url} onClick={this.setPresetQuery}>{q.name}</a>)
+                        {g[1].map(q => (<a className='dropdown-item' key={q.name} qValue={q.value} href={q.url} onClick={this.setPresetQuery}>
+                        {q.value.toLowerCase().includes("optional") && <span class='badge badge-pill badge-primary'>&nbsp;</span>}
+                        {q.value.toLowerCase().includes("service") && <span class='badge badge-pill badge-success'>&nbsp;</span>}
+                        {q.value.toLowerCase().includes("filter") && <span class='badge badge-pill badge-warning'>&nbsp;</span>}&nbsp;
+                        {q.name}</a>)
                         )}
                       </div>
                     ))}
@@ -127,6 +131,7 @@ class SparqlEditor extends Component {
               <input className='form-control' id='queryName' type='text' value={this.state.queryName} disabled />
               &nbsp;<button className='btn btn-primary' onClick={this.nextQuery} ref='nextBtn'><i className='fas fa-chevron-right' /></button>
             </div>
+            <span class="badge badge-pill badge-primary">&nbsp;</span> Optional &emsp; <span class="badge badge-pill badge-success">&nbsp;</span> Service &emsp;<span class="badge badge-pill badge-warning">&nbsp;</span> Filter
           </div>
         </form>
         <textarea id='yasqe-editor' />
