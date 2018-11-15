@@ -131,7 +131,7 @@ class SparqlEditor extends Component {
               <input className='form-control' id='queryName' type='text' value={this.state.queryName} disabled />
               &nbsp;<button className='btn btn-primary' onClick={this.nextQuery} ref='nextBtn'><i className='fas fa-chevron-right' /></button>
             </div>
-            <span class="badge badge-pill badge-primary">&nbsp;</span> Optional &emsp; <span class="badge badge-pill badge-success">&nbsp;</span> Service &emsp;<span class="badge badge-pill badge-warning">&nbsp;</span> Filter
+            Legend : <span class="badge badge-pill badge-primary">&nbsp;</span> Optional &emsp; <span class="badge badge-pill badge-success">&nbsp;</span> Service &emsp;<span class="badge badge-pill badge-warning">&nbsp;</span> Filter
           </div>
         </form>
         <textarea id='yasqe-editor' />
@@ -253,6 +253,9 @@ class SparqlEditor extends Component {
     if (currInd != -1 && currInd < this.qList.length-1) {
       this.qList[currInd+1].click();
     }
+    if (currInd == -1) {
+      this.qList[0].click();
+    }
 
     return false;
   }
@@ -267,6 +270,10 @@ class SparqlEditor extends Component {
     var currInd = this.getCurrIndex(this.yasqe.getValue());
     if (currInd > 0) {
       this.qList[currInd-1].click();
+    }
+
+    if (currInd == -1) {
+      this.qList[0].click();
     }
     return false;
   }
