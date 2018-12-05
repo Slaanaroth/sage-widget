@@ -177,6 +177,13 @@ class QueryExecutor extends Component {
       avgServerTime: 0,
       diefficiency: 0,
       timeLeft: null,
+      newTimeLeft: null,
+      lastTimeLeftAvg: null,
+      lastTimeLeftMax: null,
+      newTimeTotal: null,
+      lastTimeTotalAvg: null,
+      lastTimeTotalMax: null,
+      callEstimate: null,
       errorMessage: null,
       isRunning: false,
       showTable: false,
@@ -221,7 +228,13 @@ class QueryExecutor extends Component {
                 <br/>
                 <h3><i className='fas fa-chart-bar' /> Real-time Statistics</h3>
                 {this.state.timeLeft ? <h5>Estimated remaining time : {this.state.timeLeft}</h5> : (null)}
-
+                {this.state.newTimeLeft ? <h5>[FIRST-JOIN] Estimated remaining time : {this.state.newTimeLeft}</h5> : (null)}
+                {this.state.newTimeTotal ? <h5>[FIRST-JOIN] Estimated execution time : {this.state.newTimeTotal}</h5> : (null)}
+                {this.state.lastTimeLeftAvg ? <h5>[LAST-JOIN/AVG] Estimated remaining time : {this.state.lastTimeLeftAvg}</h5> : (null)}
+                {this.state.lastTimeTotalAvg ? <h5>[LAST-JOIN/AVG] Estimated execution time : {this.state.lastTimeTotalAvg}</h5> : (null)}
+                {this.state.lastTimeLeftMax ? <h5>[LAST-JOIN/MAX] Estimated remaining time : {this.state.lastTimeLeftMax}</h5> : (null)}
+                {this.state.lastTimeTotalMax ? <h5>[LAST-JOIN/MAX] Estimated execution time : {this.state.lastTimeTotalMax}</h5> : (null)}
+                {this.state.callEstimate ? <h5>Estimated HTTP call number : {this.state.callEstimate}</h5> : (null)}
                 <table className='table'>
                   <thead>
                     <tr>
@@ -368,6 +381,13 @@ class QueryExecutor extends Component {
      },
       diefficiency: 0,
       timeLeft: null,
+      newTimeLeft: null,
+      lastTimeLeftAvg: null,
+      lastTimeLeftMax: null,
+      newTimeTotal: null,
+      lastTimeTotalAvg: null,
+      lastTimeTotalMax: null,
+      callEstimate: null,
       execLogs: "No response yet",
       errorMessage: '',
       hasError: false,
@@ -490,25 +510,19 @@ class QueryExecutor extends Component {
 
 
   /**
-  * extracts the scanSource (to get its current progression state)
+  * Takes the execution tree and transforms it into a list of nodes ordered from bottom to top
   */
-  extractScanSource(execTree){
-    var res = null;
-    for(var attr in execTree) {
-      if(!execTree.hasOwnProperty(attr)) continue;
-
-      if(attr=="0") break;
-
-      if(attr=="scanSource") {
-        return execTree[attr];
-      }
-
-      res = res || this.extractScanSource(execTree[attr]);
-      if (res != null) {
-        return res;
-      }
+  treeToList(execTree){
+    var current = execTree.projSource;
+    var nodeList = [];
+    while (current.joinSource != undefined) {
+      nodeList.push(current.joinSource);
+      current = current.joinSource;
     }
-    return res;
+    current.scanSource.estimatedCardAvg = current.scanSource.cardinality;
+    current.scanSource.estimatedCardMax = current.scanSource.cardinality;
+    nodeList.push(current.scanSource);
+    return nodeList.reverse();
   }
 
   /**
@@ -526,18 +540,46 @@ class QueryExecutor extends Component {
           avgServerTime: this.spy.avgResponseTime
         })
         if (next != null) {
-          var jsonDescriptor = require("../protobuf/iterators.json"); // exemplary for node
+          var jsonDescriptor = require("../protobuf/iterators.json");
           var root = protobuf.Root.fromJSON(jsonDescriptor);
           var iterators = root.lookup("iterators");
           var nsr=iterators.RootTree.decode(Buffer.from(next,'base64'));
           var treeText = JSON.stringify(nsr, null, 2);
-          var scanSource = this.extractScanSource(nsr);
+
+          var listTree = this.treeToList(nsr);
+          for (var i = 1; i < listTree.length; i++) {
+            var curr = listTree[i];
+            var prev = listTree[i-1];
+            curr.estimatedCardAvg = (prev.estimatedCardAvg - curr.mucNumber) * (curr.loopCardTotal/curr.mucNumber) + curr.loopCardTotal;
+
+            curr.estimatedCardMax = (prev.estimatedCardMax - curr.mucNumber) * curr.maxInnerCard + curr.loopCardTotal;
+          }
+
+          var joinSource = listTree[1];
+          var scanSource = listTree[0];
+
+          var lastJoin = listTree[listTree.length-1];
+          var lastJoinSpeed = parseInt(lastJoin.loopOffsetTotal) / this.state.executionTime
+          var lastJoinTimeEstimateAvg = lastJoin.estimatedCardAvg / lastJoinSpeed;
+          var lastJoinTimeEstimateMax = lastJoin.estimatedCardMax / lastJoinSpeed;
+          console.log(lastJoin);
           var card = parseInt(scanSource.cardinality);
           var offset = parseInt(scanSource.offset);
           var estimate = ((card - offset)* this.state.executionTime) / offset;
+          var joinSpeed = (parseInt(joinSource.loopOffsetTotal)  / this.state.executionTime)
+          var joinCardEstimate = (parseInt(joinSource.loopCardTotal) / parseInt(joinSource.mucNumber)) * card
+          var timeEstimateJoin = joinCardEstimate / joinSpeed;
+          var nbCall = (this.state.httpCalls * card) / offset;
           this.setState({
             execLogs: treeText,
-            timeLeft: this.secondsToHms(estimate)
+            timeLeft: this.secondsToHms(estimate),
+            newTimeLeft: this.secondsToHms(timeEstimateJoin - this.state.executionTime),
+            lastTimeLeftAvg: this.secondsToHms(lastJoinTimeEstimateAvg - this.state.executionTime),
+            lastTimeLeftMax: this.secondsToHms(lastJoinTimeEstimateMax - this.state.executionTime),
+            newTimeTotal: this.secondsToHms(timeEstimateJoin),
+            lastTimeTotalAvg: this.secondsToHms(lastJoinTimeEstimateAvg),
+            lastTimeTotalMax: this.secondsToHms(lastJoinTimeEstimateMax),
+            callEstimate: parseInt(nbCall)
           })
         }
 

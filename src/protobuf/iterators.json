@@ -95,9 +95,29 @@
               "type": "uint64",
               "id": 5
             },
+            "cardinality": {
+              "type": "uint64",
+              "id": 6
+            },
+            "mucNumber": {
+              "type": "uint64",
+              "id": 7
+            },
+            "loopCardTotal": {
+              "type": "uint64",
+              "id": 8
+            },
+            "loopOffsetTotal": {
+              "type": "uint64",
+              "id": 9
+            },
+            "maxInnerCard": {
+              "type": "uint64",
+              "id": 10
+            },
             "optional": {
               "type": "bool",
-              "id": 6
+              "id": 11
             }
           }
         },
