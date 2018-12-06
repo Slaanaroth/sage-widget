@@ -559,10 +559,14 @@ class QueryExecutor extends Component {
           var scanSource = listTree[0];
 
           var lastJoin = listTree[listTree.length-1];
+          var loopCpt = 2;
+          while (lastJoin.estimatedCardMax == 0) {
+            lastJoin = listTree[listTree.length-loopCpt]
+            loopCpt++;
+          }
           var lastJoinSpeed = parseInt(lastJoin.loopOffsetTotal) / this.state.executionTime
           var lastJoinTimeEstimateAvg = lastJoin.estimatedCardAvg / lastJoinSpeed;
           var lastJoinTimeEstimateMax = lastJoin.estimatedCardMax / lastJoinSpeed;
-          console.log(lastJoin);
           var card = parseInt(scanSource.cardinality);
           var offset = parseInt(scanSource.offset);
           var estimate = ((card - offset)* this.state.executionTime) / offset;
