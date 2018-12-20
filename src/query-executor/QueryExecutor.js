@@ -473,7 +473,7 @@ class QueryExecutor extends Component {
         })
         this.xp += this.state.executionTime;
         console.log(this.xp);
-        this.xp = "Scan,First Join, Last Join (Avg), Last Join (Max);";
+        this.xp = "Timestamp,Scan,First Join, Last Join (Avg), Last Join (Max);\n";
         this.setState({
           results: this.state.results.concat(this.bucket)
         })
