@@ -43,6 +43,7 @@ class QueryExecutor extends Component {
     super(props)
     this.currentIterator = null
     this.diefChart = null;
+    this.xp = "Scan,First Join, Last Join (Avg), Last Join (Max);\n";
     this.listener = x => {
       const now = Date.now()
 
@@ -70,8 +71,8 @@ class QueryExecutor extends Component {
       })
 
       var lastData = this.answerGraph[this.answerGraph.length - 1];
-      this.state.data.datasets[0].data.push({x:lastData[0],y:lastData[1]});
-      this.diefChart.update();
+      // this.state.data.datasets[0].data.push({x:lastData[0],y:lastData[1]});
+      // this.diefChart.update();
 
       // store results and render them by batch
       this.bucket.push(x)
@@ -470,6 +471,9 @@ class QueryExecutor extends Component {
         this.setState({
           executionTime: (now - this.startTime) / 1000
         })
+        this.xp += this.state.executionTime;
+        console.log(this.xp);
+        this.xp = "Scan,First Join, Last Join (Avg), Last Join (Max);";
         this.setState({
           results: this.state.results.concat(this.bucket)
         })
@@ -554,8 +558,10 @@ class QueryExecutor extends Component {
 
             curr.estimatedCardMax = (prev.estimatedCardMax - curr.mucNumber) * curr.maxInnerCard + curr.loopCardTotal;
           }
-
-          var joinSource = listTree[1];
+          var joinSource;
+          if (listTree.length > 1) {
+            joinSource = listTree[1];
+          }
           var scanSource = listTree[0];
 
           var lastJoin = listTree[listTree.length-1];
@@ -570,10 +576,16 @@ class QueryExecutor extends Component {
           var card = parseInt(scanSource.cardinality);
           var offset = parseInt(scanSource.offset);
           var estimate = ((card - offset)* this.state.executionTime) / offset;
-          var joinSpeed = (parseInt(joinSource.loopOffsetTotal)  / this.state.executionTime)
-          var joinCardEstimate = (parseInt(joinSource.loopCardTotal) / parseInt(joinSource.mucNumber)) * card
-          var timeEstimateJoin = joinCardEstimate / joinSpeed;
+          if (joinSource != null) {
+            var joinSpeed = (parseInt(joinSource.loopOffsetTotal)  / this.state.executionTime)
+            var joinCardEstimate = (parseInt(joinSource.loopCardTotal) / parseInt(joinSource.mucNumber)) * card
+            var timeEstimateJoin = joinCardEstimate / joinSpeed;
+          }
           var nbCall = (this.state.httpCalls * card) / offset;
+          var timeEstimateScan = (card * this.state.executionTime) / offset;
+
+          this.xp += parseInt(timeEstimateScan) + "," + parseInt(timeEstimateJoin) + "," + parseInt(lastJoinTimeEstimateAvg) + "," + parseInt(lastJoinTimeEstimateMax) + ";\n"
+
           this.setState({
             execLogs: treeText,
             timeLeft: this.secondsToHms(estimate),
