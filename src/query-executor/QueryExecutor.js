@@ -43,7 +43,7 @@ class QueryExecutor extends Component {
     super(props)
     this.currentIterator = null
     this.diefChart = null;
-    this.xp = "Scan,First Join, Last Join (Avg), Last Join (Max);\n";
+    this.xp = "Timestamp,Scan,First Join, Last Join (Avg), Last Join (Max);\n";
     this.listener = x => {
       const now = Date.now()
 
@@ -584,7 +584,7 @@ class QueryExecutor extends Component {
           var nbCall = (this.state.httpCalls * card) / offset;
           var timeEstimateScan = (card * this.state.executionTime) / offset;
 
-          this.xp += parseInt(timeEstimateScan) + "," + parseInt(timeEstimateJoin) + "," + parseInt(lastJoinTimeEstimateAvg) + "," + parseInt(lastJoinTimeEstimateMax) + ";\n"
+          this.xp += this.state.executionTime + "," + parseInt(timeEstimateScan) + "," + parseInt(timeEstimateJoin) + "," + parseInt(lastJoinTimeEstimateAvg) + "," + parseInt(lastJoinTimeEstimateMax) + ";\n"
 
           this.setState({
             execLogs: treeText,
